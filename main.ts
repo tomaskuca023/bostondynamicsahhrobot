@@ -16,18 +16,16 @@ basic.forever(function() {
     if (!isModeSet) {
         
         
-        input.onButtonPressed(Button.A, function() {
-            
-            music.ringTone(Note.C)
+        input.onButtonPressed(Button.A, function() {       
+            basic.showArrow(ArrowNames.West)
             isReciever = false
             isModeSet = true
-            music.stopAllSounds()
         })
         input.onButtonPressed(Button.B, function () {
+            basic.showArrow(ArrowNames.East)
             isReciever = true
             isModeSet = true
         })
-
     }
 
 
