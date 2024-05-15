@@ -10,7 +10,7 @@ let bWasPressed: boolean = false
 
 
 // preset values
-let deadZone: number = 15
+let deadZone: number = 10
 let balanceF: number = 0.720
 let balanceB: number = 0.7
 
@@ -92,8 +92,6 @@ input.onButtonPressed(Button.A, function () {
         isReciever = false
         isModeSet = true
     }
-    if (isModeSet && isReciever) {
-    }
 })
 
 
@@ -135,6 +133,7 @@ radio.onReceivedValue(function(name: string, value: number) {
             }
         } 
         if (name == "reverse") {
+            
             PCAmotor.MotorRun(PCAmotor.Motors.M1, 200 * balanceB) //left
             PCAmotor.MotorRun(PCAmotor.Motors.M4, -200) //right
 
@@ -142,7 +141,8 @@ radio.onReceivedValue(function(name: string, value: number) {
                 led.plot(i, 0)
             music.ringTone(Note.C)
             }
-            
+            isReciever = true
+            isModeSet = true
         }
         
     }
@@ -157,10 +157,11 @@ radio.onReceivedString(function(receivedString: string) {
 
 //log
 basic.forever(function() {
-    //console.log(roll)
+    
     if (!isReciever) {
         console.log("turn: " + turn)
-    }
+        console.log("roll: " + roll)
+    }   
     else {
         console.log("steer: " + steer)
     }
