@@ -100,18 +100,19 @@ radio.onReceivedValue(function(name: string, value: number) {
 
     if (isReciever) {
         
+        if (((0 < value) && (value < 4)) || ((0 > value) && (value > -4))) {
+            steer = Math.abs(value) / value * 200 - value * 33
+        }
+        else if ((value == 4) || (value == -4)) {
+            steer = 0
+        }
+        else {
+            steer = value * -40
+        }
+
         if (name == "turn") {
             if (value != 0) {
-                if (((0 < value) && (value < 4)) || ((0 > value) && (value > -4))) {
-                    steer = Math.abs(value)/value * 200 - value * 33
-                }
-                else if ((value == 4) || (value == -4)) {
-                    steer = 0
-                }
-                else {
-                    steer = value * -40
-                }
-
+                
                 if (value < 0) {
                     PCAmotor.MotorRun(PCAmotor.Motors.M1, steer * balanceF)
                     PCAmotor.MotorRun(PCAmotor.Motors.M4, 200)
@@ -133,10 +134,27 @@ radio.onReceivedValue(function(name: string, value: number) {
             }
         } 
         if (name == "reverse") {
-            
-            PCAmotor.MotorRun(PCAmotor.Motors.M1, 200 * balanceB) //left
-            PCAmotor.MotorRun(PCAmotor.Motors.M4, -200) //right
+            if (value != 0) {
 
+                if (value < 0) {
+                    PCAmotor.MotorRun(PCAmotor.Motors.M1, -steer * balanceB)
+                    PCAmotor.MotorRun(PCAmotor.Motors.M4, -200)
+                    for (let i: number = 0; i < 2; i++) {
+                        led.plot(i, 3)
+                    }
+                }
+                else {
+                    PCAmotor.MotorRun(PCAmotor.Motors.M1, 200 * balanceB)
+                    PCAmotor.MotorRun(PCAmotor.Motors.M4, -steer)
+                    for (let i: number = 3; i < 5; i++) {
+                        led.plot(i, 3)
+                    }
+                }
+            }
+            if (value == 0) {
+                PCAmotor.MotorRun(PCAmotor.Motors.M1, 200 * balanceB) //left
+                PCAmotor.MotorRun(PCAmotor.Motors.M4, -200) //right
+            }
             for (let i: number = 0; i < 5; i++) {
                 led.plot(i, 0)
             music.ringTone(Note.C)
