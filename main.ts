@@ -5,17 +5,16 @@ let steer: number = 0 // reciever
 let overRoll: number = 0
 let isModeSet: boolean = false
 let isReciever: boolean = false // mode (false = control; true = reciever)
-let aWasPressed: boolean = false
-let bWasPressed: boolean = false
-
+let direction: number = 0
 
 // preset values
 let deadZone: number = 10
-let balanceF: number = 0.720
-let balanceB: number = 0.7
+let balanceF: number = 1 //0.720
+let balanceB: number = 1 //0.7
+let speed: number = 255
 
 radio.setTransmitPower(7)
-
+radio.setGroup(26)
 
 basic.forever(function() {
     basic.clearScreen()
@@ -28,7 +27,7 @@ basic.forever(function() {
     //roll limit value
         if (roll > deadZone * 5) {
             roll = deadZone * 5
-        }
+        }  
         if (roll < -deadZone * 5) {
             roll = -deadZone * 5
         }
@@ -58,22 +57,13 @@ basic.forever(function() {
         if (input.buttonIsPressed(Button.B)) {
             radio.sendValue("turn", turn)
         }
-        if (input.buttonIsPressed(Button.A)) {
+        else if (input.buttonIsPressed(Button.A)) {
             radio.sendValue("reverse", turn)
         }
-        if ((!input.buttonIsPressed(Button.B) && bWasPressed) || (!input.buttonIsPressed(Button.A) && aWasPressed)) {
-            radio.sendString("stop")
+        else {
+            radio.sendValue("stop", turn)
         }
-
-
     }
-    
-
-
-
-    aWasPressed = input.buttonIsPressed(Button.A)
-    bWasPressed = input.buttonIsPressed(Button.B)
-    
     basic.pause(50)
 })
 
@@ -99,77 +89,64 @@ input.onButtonPressed(Button.A, function () {
 radio.onReceivedValue(function(name: string, value: number) { 
 
     if (isReciever) {
-        
+    // check if is supposed to go backwards
+        if (name == "reverse") {
+            direction = -1
+        }
+        else {
+            direction = 1
+        }
+    //wheel speed depending on turn
         if (((0 < value) && (value < 4)) || ((0 > value) && (value > -4))) {
-            steer = Math.abs(value) / value * 200 - value * 33
+            steer = Math.abs(value) / value * speed - value * speed / 6
         }
         else if ((value == 4) || (value == -4)) {
             steer = 0
         }
         else {
-            steer = value * -40
+            steer = value * - speed / 5
         }
-
-        if (name == "turn") {
+    //brake lights
+        if (direction == -1) {
+            for (let i: number = 0; i < 5; i++) {
+                led.plot(i, 0)
+                music.ringTone(Note.C)
+            }
+            isReciever = true
+            isModeSet = true
+        }
+    //movement
+        if (name == "turn" || name == "reverse") {
             if (value != 0) {
                 
                 if (value < 0) {
-                    PCAmotor.MotorRun(PCAmotor.Motors.M1, steer * balanceF)
-                    PCAmotor.MotorRun(PCAmotor.Motors.M4, 200)
+                    PCAmotor.MotorRun(PCAmotor.Motors.M1, steer * balanceF * direction)
+                    PCAmotor.MotorRun(PCAmotor.Motors.M4, speed * direction)
                     for (let i: number = 0; i < 2; i++) {
                         led.plot(i,3)
                     }
                 }
                 else {
-                    PCAmotor.MotorRun(PCAmotor.Motors.M1, -200 * balanceF)
-                    PCAmotor.MotorRun(PCAmotor.Motors.M4, steer)
+                    PCAmotor.MotorRun(PCAmotor.Motors.M1, -speed * balanceF * direction)
+                    PCAmotor.MotorRun(PCAmotor.Motors.M4, steer * direction)
                     for (let i: number = 3; i < 5; i++) {
                         led.plot(i, 3)
                     }
                 }
             }
             if (value == 0) {
-                PCAmotor.MotorRun(PCAmotor.Motors.M1, -200 * balanceF) //left
-                PCAmotor.MotorRun(PCAmotor.Motors.M4, 200) //right
+                PCAmotor.MotorRun(PCAmotor.Motors.M1, -speed * balanceF * direction) //left
+                PCAmotor.MotorRun(PCAmotor.Motors.M4, speed * direction) //right
+                
             }
         } 
-        if (name == "reverse") {
-            if (value != 0) {
-
-                if (value < 0) {
-                    PCAmotor.MotorRun(PCAmotor.Motors.M1, -steer * balanceB)
-                    PCAmotor.MotorRun(PCAmotor.Motors.M4, -200)
-                    for (let i: number = 0; i < 2; i++) {
-                        led.plot(i, 3)
-                    }
-                }
-                else {
-                    PCAmotor.MotorRun(PCAmotor.Motors.M1, 200 * balanceB)
-                    PCAmotor.MotorRun(PCAmotor.Motors.M4, -steer)
-                    for (let i: number = 3; i < 5; i++) {
-                        led.plot(i, 3)
-                    }
-                }
-            }
-            if (value == 0) {
-                PCAmotor.MotorRun(PCAmotor.Motors.M1, 200 * balanceB) //left
-                PCAmotor.MotorRun(PCAmotor.Motors.M4, -200) //right
-            }
-            for (let i: number = 0; i < 5; i++) {
-                led.plot(i, 0)
-            music.ringTone(Note.C)
-            }
-            isReciever = true
-            isModeSet = true
-        }
-        
-    }
-})
-radio.onReceivedString(function(receivedString: string) {
-    if (isReciever) {
-        if (receivedString == "stop") {
+        else {
             PCAmotor.MotorStopAll()
-        }
+        }    
+    }
+    if (!isModeSet || name == "stop") {
+        isReciever = true
+        isModeSet = true
     }
 })
 
